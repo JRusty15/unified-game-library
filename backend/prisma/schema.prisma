@@ -1,0 +1,40 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Setting {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String
+}
+
+model PlatformAccount {
+  id           String   @id @default(uuid())
+  platform     String   // e.g., "steam", "epic", "gog"
+  accountName  String
+  accountId    String?
+  credentials  String?  // JSON stringified tokens/cookies
+  lastSync     DateTime @default(now())
+  games        Game[]
+}
+
+model Game {
+  id                String          @id @default(uuid())
+  title             String
+  platform          String
+  externalId        String?
+  coverUrl          String?
+  metadata          String?         // JSON stringified extra info
+  platformAccountId String
+  platformAccount   PlatformAccount @relation(fields: [platformAccountId], references: [id])
+
+  @@unique([platform, externalId, platformAccountId])
+}
