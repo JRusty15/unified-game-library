@@ -13,7 +13,8 @@ const Settings: React.FC = () => {
     accountId: '',
     code: '', 
     cookies: '',
-    ticket: ''
+    ticket: '',
+    npsso: ''
   });
   const [loading, setLoading] = useState(false);
   
@@ -89,10 +90,27 @@ const Settings: React.FC = () => {
         alert('Ubisoft authentication failed. Check your session ticket.');
         return;
       }
+    } else if (newAccount.platform === 'playstation') {
+      try {
+        const authRes = await axios.post(`${API_URL}/accounts/authenticate`, {
+          platform: 'playstation',
+          params: { npsso: newAccount.npsso }
+        });
+        accountData.accountId = 'me'; // PSN-API uses 'me' for current user
+        accountData.credentials = { 
+          npsso: authRes.data.npsso,
+          accessToken: authRes.data.accessToken,
+          refreshToken: authRes.data.refreshToken,
+          expiresAt: authRes.data.expiresAt
+        };
+      } catch (err) {
+        alert('PlayStation authentication failed. Check your NPSSO token.');
+        return;
+      }
     }
 
     await axios.post(`${API_URL}/accounts`, accountData);
-    setNewAccount({ platform: 'steam', accountName: '', accountId: '', code: '', cookies: '', ticket: '' });
+    setNewAccount({ platform: 'steam', accountName: '', accountId: '', code: '', cookies: '', ticket: '', npsso: '' });
     fetchData();
   };
 
@@ -194,7 +212,7 @@ const Settings: React.FC = () => {
                 <option value="steam">Steam</option>
                 <option value="epic">Epic Games Store</option>
                 <option value="gog">GOG.com</option>
-                <option value="ubisoft">Ubisoft Connect</option>
+                <option value="playstation">PlayStation Network</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -266,24 +284,24 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          {newAccount.platform === 'ubisoft' && (
+          {newAccount.platform === 'playstation' && (
             <div className="space-y-4">
               <div className="p-4 bg-indigo-600/10 border border-indigo-500/20 rounded-lg text-sm">
-                <p className="mb-2 font-bold">To link Ubisoft Connect:</p>
+                <p className="mb-2 font-bold">To link PlayStation Network:</p>
                 <ol className="list-decimal ml-4 space-y-1">
-                  <li>Log in to <a href="https://connect.ubisoft.com" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">connect.ubisoft.com</a>.</li>
-                  <li>Press <strong>F12</strong>, go to <strong>Network</strong> tab, filter by <strong>sessions</strong>.</li>
-                  <li>Refresh the page, find the <code>sessions</code> request (POST).</li>
-                  <li>In the <strong>Response</strong> tab, copy the **entire JSON object** (starting with <code>{'{'}</code>).</li>
+                  <li>Log in to <a href="https://www.playstation.com" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">playstation.com</a>.</li>
+                  <li>In the same browser, visit <a href="https://ca.account.sony.com/api/v1/ssocookie" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">this link</a>.</li>
+                  <li>Copy the 64-character <strong>npsso</strong> value.</li>
+                  <li>Paste it below and click Add Account.</li>
                 </ol>
               </div>
               <div className="space-y-2">
-                <label className="text-xs text-zinc-500 uppercase font-bold">Session JSON or URL</label>
+                <label className="text-xs text-zinc-500 uppercase font-bold">NPSSO Token</label>
                 <input 
-                  placeholder="Paste the Ubisoft JSON response or WebSocket URL here"
+                  placeholder="Paste the 64-character token here"
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 font-mono"
-                  value={newAccount.ticket}
-                  onChange={(e) => setNewAccount({...newAccount, ticket: e.target.value})}
+                  value={newAccount.npsso}
+                  onChange={(e) => setNewAccount({...newAccount, npsso: e.target.value})}
                 />
               </div>
             </div>

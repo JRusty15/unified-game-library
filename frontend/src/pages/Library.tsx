@@ -25,6 +25,24 @@ const Library: React.FC = () => {
     setLoading(false);
   };
 
+  // Dynamically get unique platforms from the games list
+  const availablePlatforms = React.useMemo(() => {
+    const platforms = new Set<string>();
+    games.forEach(game => platforms.add(game.platform));
+    return Array.from(platforms).sort();
+  }, [games]);
+
+  const getPlatformLabel = (platform: string) => {
+    const labels: Record<string, string> = {
+      steam: 'Steam',
+      epic: 'Epic Games',
+      gog: 'GOG.com',
+      ubisoft: 'Ubisoft Connect',
+      playstation: 'PlayStation'
+    };
+    return labels[platform] || platform.toUpperCase();
+  };
+
   // Find titles that exist on multiple platforms
   const multiPlatformTitles = React.useMemo(() => {
     const titleMap = new Map<string, Set<string>>();
@@ -77,10 +95,9 @@ const Library: React.FC = () => {
             onChange={(e) => setPlatformFilter(e.target.value)}
           >
             <option value="all">All Platforms</option>
-            <option value="steam">Steam</option>
-            <option value="epic">Epic Games</option>
-            <option value="gog">GOG.com</option>
-            <option value="ubisoft">Ubisoft Connect</option>
+            {availablePlatforms.map(p => (
+              <option key={p} value={p}>{getPlatformLabel(p)}</option>
+            ))}
           </select>
 
           <button
@@ -95,6 +112,23 @@ const Library: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* Stats Overview */}
+      <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-2xl flex flex-col justify-center">
+          <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Total Games</span>
+          <span className="text-2xl font-black text-white">{games.length}</span>
+        </div>
+        {availablePlatforms.map(platform => {
+          const count = games.filter(g => g.platform === platform).length;
+          return (
+            <div key={platform} className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-2xl flex flex-col justify-center group hover:border-indigo-500/50 transition-colors">
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">{getPlatformLabel(platform)}</span>
+              <span className="text-2xl font-black text-white group-hover:text-indigo-400 transition-colors">{count}</span>
+            </div>
+          );
+        })}
+      </section>
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -123,6 +157,8 @@ const GameCard: React.FC<{ game: any }> = ({ game }) => {
         return `https://www.gog.com/game/${metadata.slug || game.title.toLowerCase().replace(/ /g, '_')}`;
       case 'ubisoft':
         return `https://store.ubisoft.com/search?q=${encodeURIComponent(game.title)}`;
+      case 'playstation':
+        return `https://www.playstation.com/search/?q=${encodeURIComponent(game.title)}`;
       default:
         return null;
     }
@@ -179,6 +215,8 @@ const PlatformIcon: React.FC<{ platform: string }> = ({ platform }) => {
       return <div className="text-[10px] font-bold text-white px-1">GOG</div>;
     case 'ubisoft':
       return <div className="text-[10px] font-bold text-white px-1">UBI</div>;
+    case 'playstation':
+      return <div className="text-[10px] font-bold text-white px-1">PSN</div>;
     default:
       return <div className="text-[10px] font-bold text-white px-1 uppercase">{platform}</div>;
   }

@@ -3,10 +3,12 @@ import prisma from '../lib/prisma';
 import { SyncService } from '../services/sync.service';
 import { EpicService } from '../services/epic.service';
 import { UbisoftService } from '../services/ubisoft.service';
+import { PlaystationService } from '../services/playstation.service';
 
 const syncService = new SyncService();
 const epicService = new EpicService();
 const ubisoftService = new UbisoftService();
+const playstationService = new PlaystationService();
 
 export const getAccounts = async (req: Request, res: Response) => {
   const accounts = await prisma.platformAccount.findMany();
@@ -36,6 +38,9 @@ export const authenticatePlatform = async (req: Request, res: Response) => {
         accountId: authData.accountId,
         accountName: authData.accountName
       });
+    } else if (platform === 'playstation') {
+      const authData = await playstationService.authenticate({ npsso: params.npsso });
+      res.json(authData);
     } else {
       res.status(400).json({ error: 'Unsupported platform for direct auth' });
     }

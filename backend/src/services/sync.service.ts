@@ -5,11 +5,14 @@ import { EpicService } from './epic.service';
 import { UbisoftService } from './ubisoft.service';
 import { SteamGridDBService } from './steamgriddb.service';
 
+import { PlaystationService } from './playstation.service';
+
 export class SyncService {
   private steamService = new SteamService();
   private gogService = new GogService();
   private epicService = new EpicService();
   private ubisoftService = new UbisoftService();
+  private playstationService = new PlaystationService();
 
   async syncAccount(accountId: string) {
     try {
@@ -48,11 +51,19 @@ export class SyncService {
           appId: credentials.appId,
           accountId: account.accountId! 
         });
+      } else if (account.platform === 'playstation') {
+        games = await this.playstationService.fetchGames({ 
+          npsso: credentials.npsso
+        });
       }
 
       console.log(`Syncing ${games.length} games for ${account.platform}...`);
 
+      const syncedExternalIds = new Set<string>();
+
       for (const gameData of games) {
+        syncedExternalIds.add(gameData.externalId);
+        
         let game = await prisma.game.findUnique({
           where: {
             platform_externalId_platformAccountId: {
@@ -100,6 +111,22 @@ export class SyncService {
               coverUrl: coverUrl,
             },
           });
+        }
+      }
+
+      // Cleanup: Remove games that were previously synced but are no longer in the fetched list
+      // Only do this if we actually fetched games (avoid wiping library on API failure)
+      if (games.length > 0) {
+        const result = await prisma.game.deleteMany({
+          where: {
+            platformAccountId: account.id,
+            externalId: {
+              notIn: Array.from(syncedExternalIds)
+            }
+          }
+        });
+        if (result.count > 0) {
+          console.log(`Removed ${result.count} stale/duplicate games for ${account.platform}`);
         }
       }
 
