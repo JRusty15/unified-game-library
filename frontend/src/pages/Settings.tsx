@@ -5,7 +5,6 @@ import { RefreshCw, Plus, Trash2 } from 'lucide-react';
 const API_URL = '/api';
 
 const Settings: React.FC = () => {
-  const [settings, setSettings] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [newAccount, setNewAccount] = useState({ 
     platform: 'steam', 
@@ -31,7 +30,6 @@ const Settings: React.FC = () => {
         axios.get(`${API_URL}/settings`),
         axios.get(`${API_URL}/accounts`)
       ]);
-      setSettings(sRes.data);
       setAccounts(aRes.data);
       
       const sgdb = sRes.data.find((s: any) => s.key === 'steamgriddb_api_key')?.value || '';

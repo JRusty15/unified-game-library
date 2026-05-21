@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Filter } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 const API_URL = '/api';
 
